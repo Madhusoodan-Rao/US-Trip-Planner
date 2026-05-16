@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US Trip Planner — Amma & Baba's Visit 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#faf8f3;--warm-white:#fff9f2;--ink:#1a1612;--ink-light:#5a5248;--ink-muted:#9a9088;
+  --border:#e8e2d8;--border-dark:#cec8bc;
+  --saffron:#e8820c;--saffron-light:#fdf0e0;--saffron-pale:#fef8ef;
+  --teal:#0e7c6b;--teal-light:#e6f5f2;
+  --blue:#1e5fa8;--blue-light:#e8f0fb;
+  --rose:#b84d5c;--rose-light:#faeaec;
+  --green:#2d7a3e;--green-light:#eaf5ed;
+  --purple:#5e4aab;--purple-light:#f0ecfd;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);font-size:15px;line-height:1.6;}
+
+.header{background:var(--ink);color:var(--warm-white);padding:2.5rem 2rem 2rem;text-align:center;position:relative;overflow:hidden;}
+.header-pattern{position:absolute;inset:0;background-image:radial-gradient(circle at 20% 50%,rgba(232,130,12,.12) 0%,transparent 50%),radial-gradient(circle at 80% 50%,rgba(14,124,107,.10) 0%,transparent 50%);pointer-events:none;}
+.header-eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--saffron);margin-bottom:8px;font-weight:500;}
+.header h1{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,4vw,2.6rem);font-weight:600;line-height:1.2;margin-bottom:8px;color:#fff;}
+.header-sub{font-size:14px;color:rgba(255,255,255,.55);margin-bottom:1.5rem;}
+.header-stats{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;}
+.header-stat-num{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:600;color:var(--saffron);display:block;}
+.header-stat-label{font-size:11px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em;}
+
+.nav{background:#fff;border-bottom:1px solid var(--border);display:flex;overflow-x:auto;scrollbar-width:none;position:sticky;top:0;z-index:100;}
+.nav::-webkit-scrollbar{display:none;}
+.nav-btn{padding:.85rem 1.25rem;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;white-space:nowrap;background:none;border:none;border-bottom:2px solid transparent;color:var(--ink-muted);cursor:pointer;transition:all .15s;}
+.nav-btn.active{color:var(--saffron);border-bottom-color:var(--saffron);}
+.nav-btn:hover:not(.active){color:var(--ink);background:var(--cream);}
+
+.page{display:none;padding:1.5rem;max-width:960px;margin:0 auto;}
+.page.active{display:block;}
+
+.cal-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1rem;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px;}
+.cal-toolbar-title{font-weight:500;font-size:14px;flex:1;}
+.cal-toolbar-hint{font-size:12px;color:var(--ink-muted);}
+.btn{padding:6px 14px;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:500;border-radius:8px;border:1px solid var(--border-dark);background:#fff;color:var(--ink);cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn:hover{background:var(--cream);}
+.btn-primary{background:var(--saffron);color:#fff;border-color:var(--saffron);}
+.btn-primary:hover{background:#c96d08;}
+.btn-danger{background:#fce8e8;color:#891a1a;border-color:#f0a0a0;}
+.btn-danger:hover{background:#f7c1c1;}
+
+.cal-month-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;}
+.cal-month-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--cream);}
+.cal-month-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;flex:1;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-dow{text-align:center;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);padding:8px 4px 4px;background:var(--cream);border-right:1px solid var(--border);}
+.cal-dow:last-child{border-right:none;}
+.cal-day{border-top:1px solid var(--border);border-right:1px solid var(--border);min-height:76px;padding:4px 5px;transition:background .1s;}
+.cal-day:nth-child(7n){border-right:none;}
+.cal-day.empty{background:var(--cream);pointer-events:none;}
+.cal-day.weekend{background:#fdfcf9;}
+.cal-day.drag-over{background:#fff8ee!important;outline:2px dashed var(--saffron);outline-offset:-2px;}
+.cal-num{font-size:12px;color:var(--ink-muted);display:block;margin-bottom:3px;}
+.cal-num.sat,.cal-num.sun{color:var(--saffron);font-weight:500;}
+
+.cal-event{font-size:10.5px;padding:2px 5px;border-radius:4px;margin-top:2px;line-height:1.3;display:flex;align-items:center;gap:3px;cursor:pointer;user-select:none;font-weight:500;transition:opacity .1s;}
+.cal-event.has-details::after{content:'📎';font-size:8px;margin-left:1px;opacity:.7;}
+.cal-event.dragging{opacity:.35;}
+.cal-event-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-event-del{opacity:0;font-size:10px;cursor:pointer;flex-shrink:0;font-weight:700;line-height:1;}
+.cal-event:hover .cal-event-del{opacity:1;}
+
+.ev-saffron{background:#fdf0e0;color:#a05800;}
+.ev-teal{background:#e6f5f2;color:#0a5a4d;}
+.ev-blue{background:#e8f0fb;color:#154082;}
+.ev-green{background:#eaf5ed;color:#1e5a2c;}
+.ev-rose{background:#faeaec;color:#8a3040;}
+.ev-purple{background:#f0ecfd;color:#3e2e8a;}
+.ev-gray{background:#f0ede8;color:#4a4540;}
+.ev-holiday{background:#1a1612;color:#fff;}
+
+.add-event-btn{width:100%;font-size:10px;color:var(--ink-muted);background:none;border:1px dashed var(--border-dark);border-radius:4px;padding:2px 4px;cursor:pointer;text-align:left;transition:all .12s;margin-top:3px;font-family:'DM Sans',sans-serif;}
+.add-event-btn:hover{background:var(--saffron-pale);color:var(--saffron);border-color:var(--saffron);}
+
+/* MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;padding:1rem;}
+.modal-backdrop.open{display:flex;}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:680px;border:1px solid var(--border);display:flex;flex-direction:column;max-height:90vh;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.18);}
+.modal-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--cream);border-radius:16px 16px 0 0;}
+.modal-header h3{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;flex:1;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-muted);padding:2px 6px;border-radius:6px;line-height:1;}
+.modal-close:hover{background:var(--border);color:var(--ink);}
+.modal-tabs{display:flex;border-bottom:1px solid var(--border);background:#fff;}
+.modal-tab{flex:1;padding:10px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--ink-muted);cursor:pointer;transition:all .15s;}
+.modal-tab.active{color:var(--saffron);border-bottom-color:var(--saffron);}
+.modal-body{padding:18px 20px;overflow-y:auto;flex:1;}
+
+.form-row{margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;}
+.form-input{width:100%;padding:8px 10px;border:1px solid var(--border-dark);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--ink);background:#fff;outline:none;transition:border .15s;}
+.form-input:focus{border-color:var(--saffron);box-shadow:0 0 0 2px rgba(232,130,12,.15);}
+textarea.form-input{resize:vertical;min-height:90px;line-height:1.55;}
+
+.color-picker{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.color-swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:2px solid transparent;transition:all .12s;}
+.color-swatch.selected{border-color:var(--ink)!important;transform:scale(1.15);}
+
+.links-list{margin-top:4px;}
+.link-row{display:flex;gap:6px;margin-bottom:6px;align-items:center;}
+.link-row input{flex:1;padding:7px 9px;border:1px solid var(--border-dark);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;color:var(--ink);outline:none;}
+.link-row input:focus{border-color:var(--saffron);}
+.link-row input.link-label{max-width:130px;}
+.link-del-btn{background:none;border:none;cursor:pointer;color:var(--ink-muted);font-size:14px;padding:3px;border-radius:5px;flex-shrink:0;}
+.link-del-btn:hover{background:#fce8e8;color:#891a1a;}
+.add-link-btn{font-size:12px;color:var(--blue);background:none;border:1px dashed var(--border-dark);border-radius:7px;padding:5px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;text-align:left;transition:all .12s;}
+.add-link-btn:hover{border-color:var(--blue);background:var(--blue-light);}
+
+.detail-section{margin-bottom:16px;}
+.detail-label{font-size:10px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.detail-desc{font-size:13px;color:var(--ink-light);line-height:1.65;white-space:pre-wrap;background:var(--cream);border-radius:8px;padding:10px 12px;}
+.detail-conf{font-size:13px;font-family:monospace;background:var(--saffron-pale);color:#7a4a00;border-radius:8px;padding:8px 12px;border:1px solid #f0c87a;display:flex;align-items:center;gap:8px;}
+.copy-btn{font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #f0c87a;background:#fff;cursor:pointer;color:#7a4a00;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.copy-btn:hover{background:var(--saffron-light);}
+.detail-links{display:flex;flex-direction:column;gap:6px;}
+.detail-link-item{display:flex;align-items:center;gap:8px;background:var(--blue-light);border-radius:8px;padding:8px 12px;text-decoration:none;color:var(--blue);font-size:13px;transition:background .12s;}
+.detail-link-item:hover{background:#d0e4f8;}
+.detail-link-text{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.no-details{font-size:13px;color:var(--ink-muted);text-align:center;padding:24px 10px;}
+
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--cream);border-radius:0 0 16px 16px;flex-shrink:0;}
+
+/* TRIP CARDS */
+.trip-card{background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:1.25rem;overflow:hidden;}
+.trip-card-header{padding:1.1rem 1.25rem;display:flex;align-items:flex-start;gap:14px;border-bottom:1px solid var(--border);}
+.trip-emoji{font-size:1.6rem;line-height:1;flex-shrink:0;margin-top:2px;}
+.trip-title{font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;margin-bottom:3px;}
+.trip-meta-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.tag-saffron{background:var(--saffron-light);color:#a05800;}
+.tag-teal{background:var(--teal-light);color:#0a5a4d;}
+.tag-blue{background:var(--blue-light);color:#154082;}
+.tag-rose{background:var(--rose-light);color:#8a3040;}
+.tag-green{background:var(--green-light);color:#1e5a2c;}
+.tag-purple{background:var(--purple-light);color:#3e2e8a;}
+.date-box{background:var(--saffron-pale);border-left:3px solid var(--saffron);padding:10px 14px;margin:0 1.25rem 1rem;border-radius:0 8px 8px 0;}
+.date-box-title{font-weight:500;color:#a05800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.date-box-val{font-size:15px;font-weight:500;color:var(--ink);}
+.date-box-note{font-size:12px;color:var(--ink-muted);margin-top:2px;}
+.days-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--border);margin:0 1.25rem 1rem;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.day-cell{background:#fff;padding:10px 12px;}
+.day-cell-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);margin-bottom:4px;}
+.day-cell-title{font-size:13px;font-weight:500;margin-bottom:4px;color:var(--ink);}
+.day-cell-items{font-size:12px;color:var(--ink-light);line-height:1.55;}
+.tips-block{background:var(--cream);border-radius:0 0 13px 13px;padding:10px 1.25rem 1rem;border-top:1px solid var(--border);}
+.tips-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-muted);font-weight:500;margin-bottom:5px;}
+.tip-line{font-size:12.5px;color:var(--ink-light);line-height:1.65;padding-left:12px;position:relative;}
+.tip-line::before{content:'•';position:absolute;left:0;color:var(--saffron);}
+
+.local-section-title{font-size:13px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.08em;margin:1.25rem 0 .6rem;}
+.local-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px;}
+.local-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.local-card-icon{font-size:1.1rem;margin-bottom:5px;display:block;}
+.local-card-name{font-size:13px;font-weight:500;margin-bottom:3px;}
+.local-card-dist{font-size:11px;color:var(--saffron);font-weight:500;margin-bottom:4px;}
+.local-card-detail{font-size:12px;color:var(--ink-light);line-height:1.5;}
+
+.tips-section{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;}
+.tips-section-header{padding:12px 16px;border-bottom:1px solid var(--border);font-weight:500;font-size:14px;}
+.tips-section-body{padding:12px 16px;}
+.tip-row{font-size:13px;color:var(--ink-light);padding:4px 0 4px 14px;position:relative;line-height:1.6;}
+.tip-row::before{content:'→';position:absolute;left:0;color:var(--saffron);font-size:11px;top:6px;}
+
+.book-list{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;}
+.book-item{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.book-item:last-child{border-bottom:none;}
+.book-check{width:18px;height:18px;border:1.5px solid var(--border-dark);border-radius:4px;flex-shrink:0;margin-top:1px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.book-check.done{background:var(--teal);border-color:var(--teal);color:#fff;font-size:11px;}
+.book-item-content{flex:1;}
+.book-item-title{font-size:13px;font-weight:500;color:var(--ink);}
+.book-item-note{font-size:12px;color:var(--ink-muted);margin-top:1px;}
+.book-priority{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:600;flex-shrink:0;}
+.priority-urgent{background:#fce8e8;color:#891a1a;}
+.priority-soon{background:var(--saffron-light);color:#a05800;}
+.priority-normal{background:var(--green-light);color:#1e5a2c;}
+
+.snow-alert{background:#e8f4fb;border:1px solid #a8d4ec;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem;display:flex;gap:12px;align-items:flex-start;}
+[contenteditable]{outline:none;cursor:text;border-radius:3px;transition:background .15s;}
+[contenteditable]:hover{background:rgba(232,130,12,.07);}
+[contenteditable]:focus{background:rgba(232,130,12,.12);box-shadow:0 0 0 2px rgba(232,130,12,.2);padding:1px 3px;margin:-1px -3px;}
+.section-intro{font-size:14px;color:var(--ink-light);margin-bottom:1.25rem;line-height:1.65;}
+
+@media(max-width:600px){
+  .header{padding:1.5rem 1rem 1.25rem;}
+  .page{padding:1rem;}
+  .days-grid,.date-box{margin-left:.75rem;margin-right:.75rem;}
+  .cal-day{min-height:62px;}
+  .cal-toolbar-hint{display:none;}
+  .modal{border-radius:12px;}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-pattern"></div>
+  <div class="header-eyebrow">Family Trip Planner · Portland, OR · 2026</div>
+  <h1>Amma &amp; Baba's<br>America Adventure 2026</h1>
+  <div class="header-sub">May 30 – August 30, 2026 &nbsp;·&nbsp; 93 days &nbsp;·&nbsp; Hillsboro, Oregon</div>
+  <div class="header-stats">
+    <div class="header-stat"><span class="header-stat-num">4</span><span class="header-stat-label">Major trips</span></div>
+    <div class="header-stat"><span class="header-stat-num">14+</span><span class="header-stat-label">Local outings</span></div>
+    <div class="header-stat"><span class="header-stat-num">93</span><span class="header-stat-label">Days together</span></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('cal',this)">📅 Calendar</button>
+  <button class="nav-btn" onclick="showPage('trips',this)">✈️ Major Trips</button>
+  <button class="nav-btn" onclick="showPage('local',this)">🌲 Local & PNW</button>
+  <button class="nav-btn" onclick="showPage('book',this)">📋 Booking</button>
+  <button class="nav-btn" onclick="showPage('tips',this)">🇮🇳 Tips</button>
+</nav>
+
+<!-- CALENDAR PAGE -->
+<div id="page-cal" class="page active">
+  <div class="cal-toolbar">
+    <div class="cal-toolbar-title">📅 Summer 2026 — Amma &amp; Baba's Visit</div>
+    <span class="cal-toolbar-hint">☁️ Syncs to Google Sheets · 📎 = has saved details · Drag to move</span>
+    <button class="btn btn-primary" onclick="openModal(null,null)">+ Add event</button>
+    <button class="btn" onclick="exportFile()">💾 Export file</button>
+    <span style="font-size:10px;color:var(--border-dark);cursor:pointer;padding:4px;border-radius:4px;" onclick="doReset()" title="Reset all events to default">↺</span>
+  </div>
+  <div id="cal-root"></div>
+  <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:1rem;">
+    <div style="font-size:11px;font-weight:500;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Colour key</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;">
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#e6f5f2;border:1px solid #9FE1CB;display:inline-block;"></span>Trip 1: SFO</div>
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#e8f0fb;border:1px solid #85B7EB;display:inline-block;"></span>Trip 4: Yellowstone</div>
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#fdf0e0;border:1px solid #FAC775;display:inline-block;"></span>Trip 2: Grand Canyon</div>
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#faeaec;border:1px solid #ED93B1;display:inline-block;"></span>Trip 3: NYC+DC+Niagara</div>
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#eaf5ed;border:1px solid #C0DD97;display:inline-block;"></span>Local / PNW</div>
+      <div style="display:flex;align-items:center;gap:5px;"><span style="width:12px;height:12px;border-radius:3px;background:#1a1612;display:inline-block;"></span>Holiday / arrival</div>
+      <div style="display:flex;align-items:center;gap:5px;">📎 = has saved details</div>
+    </div>
+  </div>
+  <div style="background:var(--saffron-pale);border:1px solid #f0c87a;border-radius:12px;padding:12px 16px;font-size:13px;color:#7a4a00;line-height:1.65;">
+    ❄️ <strong>Do Mt Hood (May 30–31) and Mt Rainier (Jun 6–7) first!</strong> Snow melts fast — these are the very first two weekends. Don't push them later.
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="handleBackdropClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-heading">Event</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-details" onclick="switchTab('details')">📋 Details</button>
+      <button class="modal-tab" id="tab-edit" onclick="switchTab('edit')">✏️ Edit</button>
+    </div>
+    <div id="pane-details" class="modal-body"><div id="detail-view-content"></div></div>
+    <div id="pane-edit" class="modal-body" style="display:none;">
+      <div class="form-row">
+        <label class="form-label">Event name</label>
+        <input class="form-input" id="ev-name" type="text" placeholder="e.g. Fly PDX → SJC" maxlength="60">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Date</label>
+        <input class="form-input" id="ev-date" type="date" min="2026-05-01" max="2026-09-30">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Description / Notes</label>
+        <textarea class="form-input" id="ev-desc" placeholder="Flight times, hotel name, seat numbers, what to pack, meeting point — paste anything here!"></textarea>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Confirmation / Booking Number</label>
+        <input class="form-input" id="ev-conf" type="text" placeholder="e.g. PNR: ABC123 or Hotel ref: XYZ456">
+      </div>
+      <div class="form-row">
+        <label class="form-label">Links (tickets, hotel, booking, maps…)</label>
+        <div class="links-list" id="links-list"></div>
+        <button class="add-link-btn" onclick="addLinkRow()">+ Add link</button>
+      </div>
+      <div class="form-row">
+        <label class="form-label">Colour</label>
+        <div class="color-picker" id="color-picker"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="del-btn" style="display:none" onclick="doDelete()">Delete event</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" id="save-btn" onclick="doSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRIPS PAGE -->
+<div id="page-trips" class="page">
+
+  <div style="background:var(--green-light);border:1px solid #a8d4b0;border-radius:12px;padding:12px 16px;margin-bottom:1.25rem;font-size:13px;color:#1a5028;line-height:1.65;">
+    <strong>2026 note:</strong> July 4th falls on a <strong>Saturday</strong> in 2026 — so the holiday weekend runs Fri Jul 3 through Sun Jul 5. Only need 1 PTO day (Mon Jul 6) to get a 4-day weekend. Total PTO across all 4 trips: <strong>~5 days</strong>.
+  </div>
+
+  <div class="trip-card">
+    <div class="trip-card-header">
+      <div class="trip-emoji">🌉</div>
+      <div style="flex:1">
+        <div class="trip-title">Trip 1 — San Jose + San Francisco</div>
+        <div style="font-size:13px;color:var(--ink-muted)">June 12–14, 2026 (Fri–Sun) · Fly PDX→SJC · 0 PTO days needed</div>
+        <div class="trip-meta-row"><span class="tag tag-teal">3 days</span><span class="tag tag-green">Livermore Temple</span><span class="tag tag-saffron">Book flights now</span></div>
+      </div>
+    </div>
+    <div class="date-box">
+      <div class="date-box-title">Flights</div>
+      <div class="date-box-val">Fly Fri Jun 12 evening after work · Return Sun Jun 14 evening</div>
+      <div class="date-box-note">~1.5h flight · PDX→SJC · Stay downtown SJ Fri night, Union Square SF Sat night</div>
+    </div>
+    <div class="days-grid">
+      <div class="day-cell"><div class="day-cell-label">Fri Jun 12 — Evening</div><div class="day-cell-title">Arrive San Jose</div><div class="day-cell-items">Land ~8–9pm · Hotel downtown SJ · Late dinner Saravana Bhavan (best south Indian in Bay Area)</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sat Jun 13 — Full day</div><div class="day-cell-title">SJ + SF</div><div class="day-cell-items">SJSU campus · Silicon Valley drive (Apple, Google, Meta HQ) · Shiva Vishnu Temple Livermore · Drive to SF · Golden Gate · Lombard St · Fisherman's Wharf · Ghirardelli · Twin Peaks · Bay Bridge night</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sun Jun 14</div><div class="day-cell-title">Mystery Spot + Big Sur</div><div class="day-cell-items">Santa Cruz Mystery Spot · Hwy 1 south · Bixby Creek Bridge · McWay Falls · Pfeiffer Beach (purple sand!) · Drive to SJC · Fly home</div></div>
+    </div>
+    <div class="tips-block"><div class="tips-label">Tips</div>
+      <div class="tip-line">Livermore Shiva Vishnu Temple — one of the most authentic Hindu temples in the US. Baba and Amma will love it</div>
+      <div class="tip-line">Pfeiffer Beach has purple sand — rare and unique, great photos to take back to India</div>
+      <div class="tip-line">Book Alcatraz early if interested — sells out weeks ahead</div>
+    </div>
+  </div>
+
+  <div class="trip-card">
+    <div class="trip-card-header">
+      <div class="trip-emoji">🦬</div>
+      <div style="flex:1">
+        <div class="trip-title">Trip 4 — Yellowstone + Grand Teton</div>
+        <div style="font-size:13px;color:var(--ink-muted)">June 26–29, 2026 (Fri–Mon) · Fly PDX→BZN · 1 PTO day (Mon Jun 29)</div>
+        <div class="trip-meta-row"><span class="tag tag-blue">4 days</span><span class="tag tag-saffron">Book park lodge NOW — sells out!</span></div>
+      </div>
+    </div>
+    <div class="date-box">
+      <div class="date-box-title">Flights + logistics</div>
+      <div class="date-box-val">Fly Fri Jun 26 morning PDX→BZN · Return Mon Jun 29 evening BZN or JAC</div>
+      <div class="date-box-note">Jackson Hole airport (JAC) is inside Grand Teton NP — most magical airport landing! Rent car in Bozeman.</div>
+    </div>
+    <div class="days-grid">
+      <div class="day-cell"><div class="day-cell-label">Fri Jun 26</div><div class="day-cell-title">Arrive + Mammoth</div><div class="day-cell-items">Fly Bozeman · Drive Gardiner north entrance (2h) · Mammoth Hot Springs terraces · Lamar Valley wildlife (bison, wolves)</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sat Jun 27</div><div class="day-cell-title">Geysers + Grand Prismatic</div><div class="day-cell-items">Old Faithful! · Grand Prismatic Spring overlook hike · Midway Geyser Basin · Norris Basin · Yellowstone Lake sunset</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sun Jun 28</div><div class="day-cell-title">Grand Teton NP</div><div class="day-cell-items">Drive south · Snake River Overlook · Mormon Row barns + Teton views · Jenny Lake short walk · Jackson town</div></div>
+      <div class="day-cell"><div class="day-cell-label">Mon Jun 29</div><div class="day-cell-title">Return</div><div class="day-cell-items">Morning wildlife viewing · Fly from JAC (Jackson Hole) or drive back to BZN · Portland by evening</div></div>
+    </div>
+    <div class="tips-block"><div class="tips-label">Tips</div>
+      <div class="tip-line">Book Old Faithful Inn or Lake Lodge inside the park — 6+ months ahead, completely sells out</div>
+      <div class="tip-line">America the Beautiful Pass ($80) covers all park entry — buy before this trip</div>
+      <div class="tip-line">Pack layers — mornings at 7,000ft are cold even in late June</div>
+    </div>
+  </div>
+
+  <div class="trip-card">
+    <div class="trip-card-header">
+      <div class="trip-emoji">🏜️</div>
+      <div style="flex:1">
+        <div class="trip-title">Trip 2 — Las Vegas + Grand Canyon + Antelope Canyon</div>
+        <div style="font-size:13px;color:var(--ink-muted)">July 3–6, 2026 (Fri–Mon) · July 4th is Saturday · Only 1 PTO day (Mon Jul 6)!</div>
+        <div class="trip-meta-row"><span class="tag tag-saffron">4 days</span><span class="tag tag-rose">Just 1 PTO day!</span><span class="tag tag-teal">Book Antelope Canyon ASAP</span></div>
+      </div>
+    </div>
+    <div class="date-box">
+      <div class="date-box-title">2026 July 4th weekend — perfect setup</div>
+      <div class="date-box-val">Fri Jul 3 + Sat Jul 4 (July 4th!) + Sun Jul 5 + Mon Jul 6</div>
+      <div class="date-box-note">July 4th = Saturday in 2026. Take only Mon Jul 6 as PTO. Vegas July 4th fireworks on a Saturday night — spectacular! Fly PDX→LAS, return LAS→PDX.</div>
+    </div>
+    <div class="days-grid">
+      <div class="day-cell"><div class="day-cell-label">Fri Jul 3</div><div class="day-cell-title">Arrive Las Vegas</div><div class="day-cell-items">Fly PDX→LAS · Red Rock Canyon stop · The Strip walk · Bellagio fountains · Indian dinner</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sat Jul 4 — July 4th!</div><div class="day-cell-title">Hoover Dam + Fireworks</div><div class="day-cell-items">Hoover Dam tour (morning) · Valley of Fire State Park · July 4th fireworks on the Strip at night — mind-blowing!</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sun Jul 5</div><div class="day-cell-title">Antelope Canyon + Grand Canyon</div><div class="day-cell-items">Upper Antelope Canyon guided tour (MUST BOOK AHEAD!) · Horseshoe Bend · Drive to Grand Canyon South Rim (2.5h)</div></div>
+      <div class="day-cell"><div class="day-cell-label">Mon Jul 6</div><div class="day-cell-title">Grand Canyon + Fly Home</div><div class="day-cell-items">South Rim sunrise at Mather Point · Rim Trail · Desert View Watchtower · Drive to LAS · Evening flight home</div></div>
+    </div>
+    <div class="tips-block"><div class="tips-label">Tips</div>
+      <div class="tip-line">Antelope Canyon — book immediately! Lower Antelope Canyon is easier walk for Baba and Amma</div>
+      <div class="tip-line">Grand Canyon South Rim: free shuttle buses — no hard walking needed, great for parents</div>
+      <div class="tip-line">Add Bryce Canyon by extending to Tue Jul 7 — hoodoos are stunning and very different landscape</div>
+    </div>
+  </div>
+
+  <div class="trip-card">
+    <div class="trip-card-header">
+      <div class="trip-emoji">🗽</div>
+      <div style="flex:1">
+        <div class="trip-title">Trip 3 — New York City + Washington DC + Niagara Falls</div>
+        <div style="font-size:13px;color:var(--ink-muted)">July 31–Aug 4, 2026 (Fri–Tue) · Fly PDX→JFK · Return BUF→PDX · 2 PTO days</div>
+        <div class="trip-meta-row"><span class="tag tag-rose">5 days</span><span class="tag tag-purple">Most ambitious trip</span></div>
+      </div>
+    </div>
+    <div class="date-box">
+      <div class="date-box-title">Open-jaw flight strategy</div>
+      <div class="date-box-val">Fly INTO JFK (NYC) Fri Jul 31 · Fly OUT of BUF (Buffalo/Niagara) Tue Aug 4</div>
+      <div class="date-box-note">Amtrak NYC→DC ($50–80, 2.5h). Rent car in DC for Niagara drive (6.5h via I-78 through PA). 2 PTO days: Mon Aug 3 + Tue Aug 4.</div>
+    </div>
+    <div class="days-grid">
+      <div class="day-cell"><div class="day-cell-label">Fri Jul 31</div><div class="day-cell-title">Arrive NYC</div><div class="day-cell-items">Fly JFK · Times Square · Central Park · Jackson Heights Queens for dinner — feels exactly like India!</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sat Aug 1</div><div class="day-cell-title">NYC Day 2</div><div class="day-cell-items">Statue of Liberty + Ellis Island ferry (book ahead!) · Brooklyn Bridge · DUMBO · 9/11 Memorial · Empire State Building evening</div></div>
+      <div class="day-cell"><div class="day-cell-label">Sun Aug 2</div><div class="day-cell-title">Washington DC</div><div class="day-cell-items">Amtrak 8am NYC→DC · National Mall · Capitol · Lincoln Memorial · WWII + Vietnam Memorials · Smithsonian (FREE!) · White House</div></div>
+      <div class="day-cell"><div class="day-cell-label">Mon Aug 3</div><div class="day-cell-title">Niagara Falls</div><div class="day-cell-items">Drive DC→Niagara (6.5h) · American Falls · Maid of the Mist boat tour · Canadian side at sunset (bring passports!)</div></div>
+      <div class="day-cell"><div class="day-cell-label">Tue Aug 4</div><div class="day-cell-title">Niagara + Fly Home</div><div class="day-cell-items">Cave of the Winds morning · Niagara-on-the-Lake · BUF airport afternoon · BUF→PDX</div></div>
+    </div>
+    <div class="tips-block"><div class="tips-label">Tips</div>
+      <div class="tip-line">Jackson Heights Queens (7 train from Manhattan) — Baba and Amma will feel like they never left India. Unmatched desi food!</div>
+      <div class="tip-line">Canadian side of Niagara is far better view — both need passports (they have them for US visa)</div>
+      <div class="tip-line">Ganesha Temple, Flushing NY — if they want a temple visit in NYC</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOCAL PAGE -->
+<div id="page-local" class="page">
+  <div class="snow-alert">
+    <div style="font-size:1.4rem;flex-shrink:0">❄️</div>
+    <div><div style="font-weight:500;color:#0c3a5c;font-size:14px;margin-bottom:4px">Do Mt Hood & Mt Rainier the VERY FIRST weekends after arrival!</div>
+    <div style="font-size:13px;color:#1a4d6e;line-height:1.6">Amma and Baba arrive Saturday May 30 — take them to Mt Hood that same weekend (May 30–31)! Snow at Timberline Lodge at 6,000ft will be best in late May/early June. Mt Rainier the next weekend Jun 6–7. First time seeing snow — it will be magical for them.</div></div>
+  </div>
+  <div class="local-section-title">❄️ Do First — Snow! (Weekends 1 & 2)</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">🏔️</span><div class="local-card-name">Mt Hood + Timberline Lodge</div><div class="local-card-dist">1.5h · May 30–31 (arrival weekend!)</div><div class="local-card-detail">Snow at 6,000ft through June. Mirror Lake trail. Sandy River. Timberline Lodge is beautiful — used in The Shining!</div></div>
+    <div class="local-card"><span class="local-card-icon">🌺</span><div class="local-card-name">Mt Rainier National Park</div><div class="local-card-dist">3.5h · Jun 6–7</div><div class="local-card-detail">Paradise meadows — snow in May–June, wildflowers peak July. Skyline Trail stunning. Combine with a Seattle overnight.</div></div>
+  </div>
+  <div class="local-section-title">🌊 Oregon Coast</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">🌊</span><div class="local-card-name">Cannon Beach + Haystack Rock</div><div class="local-card-dist">1.5h · Check weather first!</div><div class="local-card-detail">Iconic Oregon coast. Haystack Rock, Ecola State Park. Best on a clear day.</div></div>
+    <div class="local-card"><span class="local-card-icon">🏛️</span><div class="local-card-name">Astoria</div><div class="local-card-dist">2h · Combine with Cannon Beach</div><div class="local-card-detail">Astoria Column, Goonies house, Columbia River Maritime Museum, Victorian architecture.</div></div>
+    <div class="local-card"><span class="local-card-icon">🧀</span><div class="local-card-name">Tillamook Creamery</div><div class="local-card-dist">1.5h from Portland</div><div class="local-card-detail">Free factory tour + cheese tasting + amazing ice cream. Add Cape Meares lighthouse and Three Capes Loop.</div></div>
+  </div>
+  <div class="local-section-title">💦 Columbia Gorge (great after-work evenings too!)</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">💦</span><div class="local-card-name">Multnomah Falls + Waterfall Hwy</div><div class="local-card-dist">30 min · Oregon's #1 attraction</div><div class="local-card-detail">Historic Columbia River Hwy with 5+ waterfalls. Add Bonneville Dam + fish hatchery + Cascade Locks.</div></div>
+    <div class="local-card"><span class="local-card-icon">🌅</span><div class="local-card-name">Crown Point (after-work!)</div><div class="local-card-dist">30 min · Perfect after 6pm</div><div class="local-card-detail">Vista House — stunning Gorge sunset views. Only 30 min from Hillsboro. Sunset is 9pm in June/July!</div></div>
+  </div>
+  <div class="local-section-title">🌲 Oregon Nature</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">🌊</span><div class="local-card-name">Silver Falls State Park</div><div class="local-card-dist">1h · Trail of Ten Falls</div><div class="local-card-detail">10 waterfalls in one hike. Most underrated park in Oregon. Go on a weekday.</div></div>
+    <div class="local-card"><span class="local-card-icon">🔵</span><div class="local-card-name">Crater Lake National Park</div><div class="local-card-dist">4h · Make it a 2-day trip</div><div class="local-card-detail">Deepest lake in the US, most intense blue you'll ever see. Rim Drive spectacular. Stay in Klamath Falls.</div></div>
+    <div class="local-card"><span class="local-card-icon">🌋</span><div class="local-card-name">Mt St Helens</div><div class="local-card-dist">2h (WA side)</div><div class="local-card-detail">Johnston Ridge Observatory — dramatic crater view. Ape Cave lava tube (bring flashlights + jackets — it's cold inside!).</div></div>
+    <div class="local-card"><span class="local-card-icon">🎨</span><div class="local-card-name">Painted Hills (John Day)</div><div class="local-card-dist">3.5h · 2-day trip</div><div class="local-card-detail">Surreal orange, red, gold striped hills — unlike anything in India. Combine with Smith Rock State Park.</div></div>
+  </div>
+  <div class="local-section-title">🏙️ Washington State</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">🏙️</span><div class="local-card-name">Seattle (2 days)</div><div class="local-card-dist">3h from Portland</div><div class="local-card-detail">Pike Place Market (fish throwing!), Space Needle, Chihuly Garden, Bainbridge Island ferry. Stay one night.</div></div>
+    <div class="local-card"><span class="local-card-icon">🌊</span><div class="local-card-name">Olympic National Park</div><div class="local-card-dist">4h · 2-day trip</div><div class="local-card-detail">Hoh Rainforest (magical!), Hurricane Ridge, Ruby Beach sea stacks, Sol Duc Hot Springs.</div></div>
+  </div>
+  <div class="local-section-title">🌆 Portland Evenings + Culture (sunset 9pm in June/July!)</div>
+  <div class="local-grid">
+    <div class="local-card"><span class="local-card-icon">📚</span><div class="local-card-name">Powell's Books</div><div class="local-card-dist">Downtown · Open till 9pm</div><div class="local-card-detail">World's largest independent bookstore — a whole city block. Free to browse.</div></div>
+    <div class="local-card"><span class="local-card-icon">🌹</span><div class="local-card-name">Washington Park</div><div class="local-card-dist">20 min from Hillsboro</div><div class="local-card-detail">International Rose Test Garden (free!), Japanese Garden, Oregon Zoo. Beautiful summer evenings.</div></div>
+    <div class="local-card"><span class="local-card-icon">🍦</span><div class="local-card-name">Americana Evenings</div><div class="local-card-dist">Portland + Hillsboro</div><div class="local-card-detail">Costco trip, Salt & Straw ice cream, Portland Saturday Market, food carts SW 10th, Portland Pickles baseball (~$15).</div></div>
+    <div class="local-card"><span class="local-card-icon">🛍️</span><div class="local-card-name">Woodburn Premium Outlets</div><div class="local-card-dist">45 min · NO sales tax!</div><div class="local-card-detail">Nike, Adidas, Columbia, Coach at outlet prices, zero Oregon tax. Best shopping trip of the whole visit.</div></div>
+    <div class="local-card"><span class="local-card-icon">⛺</span><div class="local-card-name">Camping Weekend</div><div class="local-card-dist">Various · Plan for August</div><div class="local-card-detail">Cape Lookout (coast), Timothy Lake (Mt Hood). Consider glamping for first-timers!</div></div>
+    <div class="local-card"><span class="local-card-icon">🎡</span><div class="local-card-name">Oregon State Fair</div><div class="local-card-dist">45 min · Late August, Salem</div><div class="local-card-detail">Classic Americana — rides, food, animals, live music. Great for Baba and Amma to experience US culture.</div></div>
+  </div>
+</div>
+
+<!-- BOOKING PAGE -->
+<div id="page-book" class="page">
+  <p class="section-intro">Check off as you book. Top items sell out fastest — start now even though it's 2026!</p>
+  <div style="font-size:13px;font-weight:500;color:var(--rose);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🔴 Book TODAY</div>
+  <div class="book-list">
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Antelope Canyon guided tour (for Sun Jul 5)</div><div class="book-item-note">Sells out months ahead · AntelopeCanyon.com · Navajo-owned tours</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Yellowstone lodging inside the park (Jun 26–28)</div><div class="book-item-note">Old Faithful Inn / Lake Lodge · yellowstonenationalparklodges.com · Books out 6+ months ahead</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Flights: PDX ↔ SJC (Jun 12–14)</div><div class="book-item-note">Southwest, Alaska, United · ~$150–200 pp roundtrip · 1.5h flight</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Flights: PDX → BZN (Jun 26) + BZN/JAC → PDX (Jun 29)</div><div class="book-item-note">Bozeman has limited PDX flights — book early. JAC (Jackson Hole) return is scenic but pricier.</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Flights: PDX ↔ LAS (Jul 3–6)</div><div class="book-item-note">July 4th weekend Saturday — prices spike. Book now! Mon Jul 6 return.</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Flights: PDX → JFK (Jul 31) + BUF → PDX (Aug 4)</div><div class="book-item-note">Open-jaw — fly into NYC, fly out of Buffalo. Alaska, Delta, United.</div></div><div class="book-priority priority-urgent">URGENT</div></div>
+  </div>
+  <div style="font-size:13px;font-weight:500;color:var(--saffron);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🟡 Book within 2 weeks</div>
+  <div class="book-list">
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">America the Beautiful Annual Pass ($80)</div><div class="book-item-note">Covers ALL national parks. Saves $100+ across Yellowstone, Grand Canyon, Crater Lake, Olympic, Rainier</div></div><div class="book-priority priority-soon">SOON</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Statue of Liberty + Ellis Island ferry (for Sat Aug 1)</div><div class="book-item-note">statuecruises.com · Sells out in summer · Book timed entry</div></div><div class="book-priority priority-soon">SOON</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Hotels: SF/SJ (Jun 12–14) · Las Vegas (Jul 3–5) · NYC Midtown (Jul 31–Aug 1)</div><div class="book-item-note">Jul 4th Vegas weekend books up fast. Union Square SF. Midtown Manhattan.</div></div><div class="book-priority priority-soon">SOON</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Amtrak NYC Penn Station → DC Union Station (for Sun Aug 2)</div><div class="book-item-note">amtrak.com · Book morning train · $50–80 pp · 2.5h comfortable ride</div></div><div class="book-priority priority-soon">SOON</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Rental cars (Bozeman + Las Vegas + DC)</div><div class="book-item-note">All three trips need rental cars at airport. Book early — LAS July 4th weekend cars sell out!</div></div><div class="book-priority priority-soon">SOON</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Travel insurance for Amma &amp; Baba — full 3 months</div><div class="book-item-note">Essential! A single US ER visit = $5,000+. visitorcoverage.com or IMG Global · ~$500–800</div></div><div class="book-priority priority-soon">SOON</div></div>
+  </div>
+  <div style="font-size:13px;font-weight:500;color:var(--green);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">🟢 Book 2–4 weeks before</div>
+  <div class="book-list">
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Maid of the Mist boat tour (Niagara, Mon Aug 3)</div><div class="book-item-note">niagarafallsstatepark.com · Must-do experience at the falls</div></div><div class="book-priority priority-normal">NORMAL</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Empire State Building timed entry (NYC)</div><div class="book-item-note">esbnyc.com · Book sunset slot to skip lines</div></div><div class="book-priority priority-normal">NORMAL</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Hotels: DC (Aug 2) + Niagara area (Aug 3)</div><div class="book-item-note">DC: near National Mall. Niagara NY side is cheaper than Canadian side.</div></div><div class="book-priority priority-normal">NORMAL</div></div>
+    <div class="book-item"><div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title">Santa Cruz Mystery Spot (Sun Jun 14)</div><div class="book-item-note">mysteryspot.com · Book morning slot</div></div><div class="book-priority priority-normal">NORMAL</div></div>
+  </div>
+</div>
+
+<!-- TIPS PAGE -->
+<div id="page-tips" class="page">
+  <div class="tips-section"><div class="tips-section-header">🍛 Food — feeding Indian parents in America</div><div class="tips-section-body">
+    <div class="tip-row">Stock up on Indian groceries before Amma and Baba arrive — Apna Bazar or Patel Brothers in Beaverton. Get atta, dal, rice, ghee, pickles, their favourite snacks</div>
+    <div class="tip-row">Jackson Heights, Queens (NYC) — must visit. Literally feels like India — incredible desi food, Indian shops, Bollywood music everywhere</div>
+    <div class="tip-row">Fremont + Milpitas (Bay Area) — dense Indian restaurant scene. Saravana Bhavan for south Indian. Vik's Chaat in Berkeley is legendary</div>
+    <div class="tip-row">Pack thepla, namkeen, Indian snacks for Grand Canyon, Yellowstone, and Big Sur road trips — veg options at national parks are very limited</div>
+    <div class="tip-row">Las Vegas has Curry Leaf, Rasoi, and Namaste India for pure vegetarian options</div>
+  </div></div>
+  <div class="tips-section"><div class="tips-section-header">🛕 Temples across America</div><div class="tips-section-body">
+    <div class="tip-row">Shiva Vishnu Temple, Livermore CA — one of the most authentic Hindu temples in the US. Major pilgrimage moment for Baba and Amma</div>
+    <div class="tip-row">Ganesha Temple, Flushing Queens NY — very popular with Indian community, traditional South Indian style</div>
+    <div class="tip-row">ISKCON temples in almost every major city — Portland, Seattle, San Francisco, NYC, DC. Check local schedules for aarti times</div>
+    <div class="tip-row">BAPS Swaminarayan temple near Portland (Redmond WA) — worth a visit on a Seattle trip day</div>
+  </div></div>
+  <div class="tips-section"><div class="tips-section-header">🏥 Health + Comfort</div><div class="tips-section-body">
+    <div class="tip-row">Get travel/visitor health insurance immediately — a single US ER visit can cost $5,000+. Get 3-month coverage from visitorcoverage.com</div>
+    <div class="tip-row">High elevation alert: Grand Canyon South Rim 7,000ft, Yellowstone 6,000–8,000ft, Crater Lake 7,100ft — take it slow the first day at each</div>
+    <div class="tip-row">Comfortable walking shoes are critical — buy and break in early. Skechers GoWalk or New Balance work great</div>
+    <div class="tip-row">Bring all prescription medications in original packaging. Keep 1–2 week extra supply</div>
+    <div class="tip-row">Sunscreen SPF 50+ for all outdoor trips, especially at high elevation — Indian skin often underestimates US sun intensity</div>
+  </div></div>
+  <div class="tips-section"><div class="tips-section-header">🛍️ Shopping — taking gifts back to India</div><div class="tips-section-body">
+    <div class="tip-row">Oregon has NO sales tax — buy electronics, clothes, shoes, gifts here. Best state for shopping!</div>
+    <div class="tip-row">Woodburn Premium Outlets (45 min south) — Nike, Adidas, Columbia, Coach at outlet prices, zero tax</div>
+    <div class="tip-row">Costco — take Baba and Amma at least once. The scale of American wholesale is genuinely mind-blowing</div>
+    <div class="tip-row">Electronics: check voltage compatibility before buying appliances to take back (India 220V, US 110V)</div>
+  </div></div>
+  <div class="tips-section"><div class="tips-section-header">💡 Practical Tips</div><div class="tips-section-body">
+    <div class="tip-row">America the Beautiful Pass ($80) — covers ALL US national parks for a year. Buy on the very first trip</div>
+    <div class="tip-row">Download Google Maps offline for every destination before leaving Portland</div>
+    <div class="tip-row">Explain US tipping culture to Baba and Amma — 18–20% at restaurants is standard</div>
+    <div class="tip-row">Sunset is 9pm in June/July in Portland — long beautiful evenings perfect for after-work sightseeing till 8:30pm</div>
+    <div class="tip-row">Portland Pickles minor league baseball — quintessential American summer evening, tickets ~$12–18</div>
+  </div></div>
+  <div style="background:var(--saffron-pale);border:1px solid #f0c87a;border-radius:12px;padding:16px;text-align:center;margin-top:1rem;">
+    <div style="font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:6px;">93 days with Amma &amp; Baba ❤️</div>
+    <div style="font-size:13px;color:var(--ink-light)">These moments are rare and precious. The planning matters, but the time together matters more. Go see those sunsets.</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+// GOOGLE SHEETS BACKEND
+// ══════════════════════════════════════
+const API_URL='https://script.google.com/macros/s/AKfycbwaIectOPykA90pu6RDTnwbzCI1uUkoTtP6rQQegAmICId_CZlidozmSdCaDSKlBNCV/exec';
+
+const DEFAULTS=[
+  {id:'d1', date:'2026-05-30',text:'Amma & Baba arrive! ❤️',         color:'ev-holiday',desc:'',conf:'',links:[]},
+  {id:'d2', date:'2026-05-30',text:'❄️ Mt Hood – Timberline Lodge',   color:'ev-green',  desc:'',conf:'',links:[]},
+  {id:'d3', date:'2026-05-31',text:'Mt Hood Day 2 – Mirror Lake',     color:'ev-green',  desc:'',conf:'',links:[]},
+  {id:'d4', date:'2026-06-06',text:'Seattle Day 1',                   color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d5', date:'2026-06-07',text:'❄️ Mt Rainier – Paradise',        color:'ev-green',  desc:'',conf:'',links:[]},
+  {id:'d6', date:'2026-06-12',text:'✈️ Fly PDX→SJC (SFO Trip)',       color:'ev-teal',   desc:'',conf:'',links:[]},
+  {id:'d7', date:'2026-06-13',text:'SJSU · Temple · SF Day',          color:'ev-teal',   desc:'',conf:'',links:[]},
+  {id:'d8', date:'2026-06-14',text:'Big Sur → Fly home',              color:'ev-teal',   desc:'',conf:'',links:[]},
+  {id:'d9', date:'2026-06-20',text:'Cannon Beach',                    color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d10',date:'2026-06-21',text:'Astoria',                         color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d11',date:'2026-06-26',text:'✈️ PDX→BZN (Yellowstone)',        color:'ev-blue',   desc:'',conf:'',links:[]},
+  {id:'d12',date:'2026-06-27',text:'Old Faithful · Grand Prismatic',  color:'ev-blue',   desc:'',conf:'',links:[]},
+  {id:'d13',date:'2026-06-28',text:'Grand Teton NP',                  color:'ev-blue',   desc:'',conf:'',links:[]},
+  {id:'d14',date:'2026-06-29',text:'Grand Teton → Fly home',          color:'ev-blue',   desc:'',conf:'',links:[]},
+  {id:'d15',date:'2026-07-03',text:'✈️ PDX→LAS (Grand Canyon)',       color:'ev-saffron',desc:'',conf:'',links:[]},
+  {id:'d16',date:'2026-07-04',text:'🇺🇸 July 4th · Hoover Dam',       color:'ev-holiday',desc:'',conf:'',links:[]},
+  {id:'d17',date:'2026-07-05',text:'Antelope Canyon + Grand Canyon',  color:'ev-saffron',desc:'',conf:'',links:[]},
+  {id:'d18',date:'2026-07-06',text:'Grand Canyon Rim → Fly home',     color:'ev-saffron',desc:'',conf:'',links:[]},
+  {id:'d19',date:'2026-07-11',text:'Tillamook + Coast',               color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d20',date:'2026-07-12',text:'Silver Falls State Park',         color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d21',date:'2026-07-18',text:'Olympic NP – Hoh Rainforest',     color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d22',date:'2026-07-19',text:'Olympic NP – Hurricane Ridge',    color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d23',date:'2026-07-25',text:'Crater Lake Day 1',               color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d24',date:'2026-07-26',text:'Crater Lake Day 2 – Rim Drive',   color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d25',date:'2026-07-31',text:'✈️ PDX→JFK (NYC Trip)',           color:'ev-rose',   desc:'',conf:'',links:[]},
+  {id:'d26',date:'2026-08-01',text:'NYC – Statue of Liberty',         color:'ev-rose',   desc:'',conf:'',links:[]},
+  {id:'d27',date:'2026-08-02',text:'Washington DC',                   color:'ev-rose',   desc:'',conf:'',links:[]},
+  {id:'d28',date:'2026-08-03',text:'Niagara Falls',                   color:'ev-rose',   desc:'',conf:'',links:[]},
+  {id:'d29',date:'2026-08-04',text:'Niagara → BUF ✈️ Home',          color:'ev-rose',   desc:'',conf:'',links:[]},
+  {id:'d30',date:'2026-08-08',text:'Mt St Helens',                    color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d31',date:'2026-08-09',text:'Camping weekend',                 color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d32',date:'2026-08-15',text:'Painted Hills + Smith Rock',      color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d33',date:'2026-08-16',text:'Smith Rock State Park',           color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d34',date:'2026-08-22',text:'Woodburn Outlets shopping',       color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d35',date:'2026-08-29',text:'Oregon State Fair (Salem)',       color:'ev-gray',   desc:'',conf:'',links:[]},
+  {id:'d36',date:'2026-08-30',text:'Farewell day ❤️',                 color:'ev-holiday',desc:'',conf:'',links:[]},
+];
+
+const SWATCHES=[
+  {c:'ev-gray',   bg:'#f0ede8',bd:'#cec8bc'},
+  {c:'ev-teal',   bg:'#e6f5f2',bd:'#9FE1CB'},
+  {c:'ev-blue',   bg:'#e8f0fb',bd:'#85B7EB'},
+  {c:'ev-saffron',bg:'#fdf0e0',bd:'#FAC775'},
+  {c:'ev-rose',   bg:'#faeaec',bd:'#ED93B1'},
+  {c:'ev-green',  bg:'#eaf5ed',bd:'#C0DD97'},
+  {c:'ev-purple', bg:'#f0ecfd',bd:'#AFA9EC'},
+  {c:'ev-holiday',bg:'#1a1612',bd:'#444441'},
+];
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let events=[];
+let dragId=null;
+let editId=null;
+let selColor='ev-gray';
+let isSyncing=false;
+
+// ── STATUS BAR ──
+function setStatus(msg,type='info'){
+  let bar=document.getElementById('sync-status');
+  if(!bar){
+    bar=document.createElement('div');
+    bar.id='sync-status';
+    bar.style.cssText='position:fixed;bottom:16px;right:16px;padding:8px 14px;border-radius:10px;font-size:12px;font-family:DM Sans,sans-serif;font-weight:500;z-index:999;transition:all .3s;max-width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);';
+    document.body.appendChild(bar);
+  }
+  const colors={info:'background:#1e5fa8;color:#fff;',ok:'background:#0e7c6b;color:#fff;',error:'background:#b84d5c;color:#fff;',saving:'background:#e8820c;color:#fff;'};
+  bar.style.cssText+=colors[type]||colors.info;
+  bar.textContent=msg;
+  bar.style.display='block';
+  if(type==='ok') setTimeout(()=>bar.style.display='none',3000);
+}
+
+// ── LOAD FROM GOOGLE SHEETS ──
+
+// ── LOAD — Sheet first, localStorage fallback, DEFAULTS last resort ──
+async function load(){
+  setStatus('⟳ Loading…','info');
+  try{
+    const res=await fetch(API_URL+'?action=getEvents');
+    const data=await res.json();
+    if(data.events&&data.events.length>0){
+      events=data.events;
+      try{localStorage.setItem('tripplan_2026',JSON.stringify(events));}catch(e){}
+      setStatus('✓ Synced with Google Sheets','ok');
+      render(); return;
+    }
+  }catch(err){ console.log('Sheet fetch failed:',err); }
+  try{
+    const s=localStorage.getItem('tripplan_2026');
+    if(s){ events=JSON.parse(s); setStatus('✓ Loaded from cache','ok'); render(); return; }
+  }catch(e){}
+  events=JSON.parse(JSON.stringify(DEFAULTS));
+  setStatus('⟳ First run — saving to Sheet…','saving');
+  await pushToSheet();
+  setStatus('✓ Ready','ok');
+  render();
+}
+
+async function pushToSheet(){
+  try{
+    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'saveEvents',events})});
+  }catch(err){ setStatus('⚠️ Could not sync','error'); }
+}
+
+async function save(){
+  setStatus('⟳ Saving…','saving');
+  try{localStorage.setItem('tripplan_2026',JSON.stringify(events));}catch(e){}
+  await pushToSheet();
+  setStatus('✓ Saved','ok');
+}
+
+function uid(){return 'u'+Date.now()+Math.random().toString(36).slice(2,6);}
+
+// ── EXPORT — bakes current events into file for sharing ──
+function exportFile(){
+  const eventsJson=JSON.stringify(events,null,2);
+  const h=document.documentElement.outerHTML;
+  const updated=h.replace(/const DEFAULTS=\[[\s\S]*?\];/,'const DEFAULTS='+eventsJson+';');
+  const blob=new Blob([updated],{type:'text/html'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='us-trip-planner-2026.html';
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+// ── TABS: inline editing + add + delete on ALL items ──
+function initTabs(){
+  ['day-cell-items','day-cell-title','day-cell-label','date-box-val','date-box-note',
+   'tip-line','tip-row','local-card-name','local-card-detail','local-card-dist',
+   'book-item-title','book-item-note','tips-section-header'
+  ].forEach(cls=>document.querySelectorAll('.'+cls).forEach(el=>{
+    el.contentEditable='true';el.spellcheck=false;
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
+  }));
+  document.querySelectorAll('.tip-line,.tip-row').forEach(el=>addDelBtn(el));
+  document.querySelectorAll('.local-card').forEach(el=>addDelBtn(el));
+  document.querySelectorAll('.day-cell').forEach(el=>addDelBtn(el));
+  document.querySelectorAll('.book-item').forEach(el=>addDelBtn(el));
+  document.querySelectorAll('.tips-section-body').forEach(body=>{
+    const w=aw();w.appendChild(ab('+ add tip',()=>{
+      const r=document.createElement('div');r.className='tip-row';r.contentEditable='true';r.spellcheck=false;
+      r.textContent='New tip — click to edit';
+      r.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();r.blur();}});
+      body.insertBefore(r,w);addDelBtn(r);r.focus();sel(r);
+    }));body.appendChild(w);
+  });
+  document.querySelectorAll('.local-grid').forEach(grid=>{
+    const w=aw('display:flex;align-items:center;justify-content:center;padding:4px;');
+    w.appendChild(ab('+ add place',()=>{
+      const c=document.createElement('div');c.className='local-card';
+      c.innerHTML='<span class="local-card-icon">📍</span><div class="local-card-name" contenteditable="true" spellcheck="false">New place</div><div class="local-card-dist" contenteditable="true" spellcheck="false">Distance · timing</div><div class="local-card-detail" contenteditable="true" spellcheck="false">Description…</div>';
+      grid.insertBefore(c,w);addDelBtn(c);const n=c.querySelector('.local-card-name');n.focus();sel(n);
+    }));grid.appendChild(w);
+  });
+  document.querySelectorAll('.days-grid').forEach(grid=>{
+    const w=document.createElement('div');w.className='day-cell';w.style.cssText='display:flex;align-items:center;justify-content:center;background:var(--cream);';
+    w.appendChild(ab('+ add day',()=>{
+      const c=document.createElement('div');c.className='day-cell';
+      c.innerHTML='<div class="day-cell-label" contenteditable="true" spellcheck="false">Date</div><div class="day-cell-title" contenteditable="true" spellcheck="false">Title</div><div class="day-cell-items" contenteditable="true" spellcheck="false">Details…</div>';
+      grid.insertBefore(c,w);addDelBtn(c);const l=c.querySelector('.day-cell-label');l.focus();sel(l);
+    }));grid.appendChild(w);
+  });
+  document.querySelectorAll('.book-list').forEach(list=>{
+    const w=aw('padding:8px 16px;border-top:1px solid var(--border);');
+    w.appendChild(ab('+ add item',()=>{
+      const i=document.createElement('div');i.className='book-item';
+      i.innerHTML='<div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title" contenteditable="true" spellcheck="false">New booking item</div><div class="book-item-note" contenteditable="true" spellcheck="false">Details, website, price…</div></div>';
+      list.insertBefore(i,w);addDelBtn(i);const t=i.querySelector('.book-item-title');t.focus();sel(t);
+    }));list.appendChild(w);
+  });
+}
+function addDelBtn(el){
+  if(el.querySelector('.xbtn'))return;
+  const b=document.createElement('button');b.className='xbtn';b.innerHTML='✕';b.title='Remove';
+  b.style.cssText='position:absolute;top:3px;right:3px;display:none;background:#fce8e8;color:#891a1a;border:none;border-radius:4px;width:18px;height:18px;font-size:10px;cursor:pointer;z-index:10;align-items:center;justify-content:center;';
+  b.onclick=e=>{e.stopPropagation();if(confirm('Remove this item?'))el.remove();};
+  el.style.position='relative';
+  el.addEventListener('mouseenter',()=>b.style.display='flex');
+  el.addEventListener('mouseleave',()=>b.style.display='none');
+  el.appendChild(b);
+}
+function aw(s=''){const w=document.createElement('div');w.style.cssText=s;return w;}
+function ab(label,onclick){
+  const b=document.createElement('button');b.textContent=label;
+  b.style.cssText='font-size:11px;color:var(--ink-muted);background:none;border:1px dashed var(--border-dark);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:DM Sans,sans-serif;transition:all .12s;width:100%;';
+  b.onmouseover=()=>{b.style.color='var(--saffron)';b.style.borderColor='var(--saffron)';b.style.background='var(--saffron-pale)';};
+  b.onmouseout=()=>{b.style.color='var(--ink-muted)';b.style.borderColor='var(--border-dark)';b.style.background='none';};
+  b.onclick=onclick;return b;
+}
+function sel(el){if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
+
+// ══════════════════════════════════════
+// CALENDAR RENDER — Mon-start
+// May1=Fri, Jun1=Mon, Jul1=Wed, Aug1=Sat
+// ══════════════════════════════════════
+const MONTHS=[
+  {y:2026,m:4,label:'May 2026'},
+  {y:2026,m:5,label:'June 2026'},
+  {y:2026,m:6,label:'July 2026'},
+  {y:2026,m:7,label:'August 2026'},
+];
+
+function render(){
+  const root=document.getElementById('cal-root');
+  root.innerHTML='';
+  MONTHS.forEach(({y,m,label})=>{
+    const firstDow=(new Date(y,m,1).getDay()+6)%7; // Mon=0 … Sun=6
+    const totalDays=new Date(y,m+1,0).getDate();
+    const wrap=document.createElement('div');
+    wrap.className='cal-month-wrap';
+    const hdr=document.createElement('div');
+    hdr.className='cal-month-header';
+    hdr.innerHTML=`<span>📅</span><span class="cal-month-name">${label}</span>`;
+    wrap.appendChild(hdr);
+    const grid=document.createElement('div');
+    grid.className='cal-grid';
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d=>{
+      const el=document.createElement('div');el.className='cal-dow';el.textContent=d;grid.appendChild(el);
+    });
+    for(let i=0;i<firstDow;i++){
+      const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);
+    }
+    for(let d=1;d<=totalDays;d++){
+      const mm=String(m+1).padStart(2,'0');
+      const dd=String(d).padStart(2,'0');
+      const ds=`${y}-${mm}-${dd}`;
+      const dow=(new Date(y,m,d).getDay()+6)%7; // Mon=0 … Sat=5, Sun=6
+      const cell=document.createElement('div');
+      cell.className='cal-day'+(dow>=5?' weekend':'');
+      cell.dataset.date=ds;
+      const num=document.createElement('span');
+      num.className='cal-num'+(dow===5?' sat':dow===6?' sun':'');
+      num.textContent=d;
+      cell.appendChild(num);
+      events.filter(e=>e.date===ds).forEach(ev=>cell.appendChild(makeEvEl(ev)));
+      const ab=document.createElement('button');
+      ab.className='add-event-btn';ab.textContent='+ add';
+      ab.onclick=e=>{e.stopPropagation();openModal(null,ds);};
+      cell.appendChild(ab);
+      cell.addEventListener('dragover',e=>{e.preventDefault();cell.classList.add('drag-over');});
+      cell.addEventListener('dragleave',()=>cell.classList.remove('drag-over'));
+      cell.addEventListener('drop',e=>{
+        e.preventDefault();cell.classList.remove('drag-over');
+        if(dragId){const ev=events.find(x=>x.id===dragId);if(ev){ev.date=ds;save();render();}dragId=null;}
+      });
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+    root.appendChild(wrap);
+  });
+}
+
+function makeEvEl(ev){
+  const hasDetails=ev.desc||ev.conf||(ev.links&&ev.links.length);
+  const el=document.createElement('div');
+  el.className='cal-event '+ev.color+(hasDetails?' has-details':'');
+  el.draggable=true;el.title='Click to view/edit';
+  const txt=document.createElement('span');txt.className='cal-event-text';txt.textContent=ev.text;el.appendChild(txt);
+  const del=document.createElement('span');del.className='cal-event-del';del.textContent='✕';
+  del.onclick=e=>{e.stopPropagation();if(confirm('Delete "'+ev.text+'"?')){events=events.filter(x=>x.id!==ev.id);save();render();}};
+  el.appendChild(del);
+  el.onclick=e=>{e.stopPropagation();openModal(ev.id,ev.date);};
+  el.addEventListener('dragstart',()=>{dragId=ev.id;el.classList.add('dragging');});
+  el.addEventListener('dragend',()=>{el.classList.remove('dragging');dragId=null;});
+  return el;
+}
+
+// ══════════════════════════════════════
+// MODAL
+// ══════════════════════════════════════
+function openModal(id,date){
+  editId=id;
+  const ev=id?events.find(e=>e.id===id):null;
+  document.getElementById('modal-heading').textContent=ev?ev.text:'New event';
+  document.getElementById('del-btn').style.display=id?'inline-flex':'none';
+  document.getElementById('ev-name').value=ev?ev.text:'';
+  document.getElementById('ev-date').value=ev?ev.date:(date||'');
+  document.getElementById('ev-desc').value=ev?(ev.desc||''):'';
+  document.getElementById('ev-conf').value=ev?(ev.conf||''):'';
+  selColor=ev?ev.color:'ev-gray';
+  renderSwatches();
+  renderLinksList(ev?ev.links:[]);
+  switchTab(id?'details':'edit');
+  document.getElementById('modal-backdrop').classList.add('open');
+  if(!id)setTimeout(()=>document.getElementById('ev-name').focus(),80);
+}
+
+function closeModal(){document.getElementById('modal-backdrop').classList.remove('open');editId=null;}
+function handleBackdropClick(e){if(e.target===document.getElementById('modal-backdrop'))closeModal();}
+
+function switchTab(tab){
+  document.getElementById('tab-details').classList.toggle('active',tab==='details');
+  document.getElementById('tab-edit').classList.toggle('active',tab==='edit');
+  document.getElementById('pane-details').style.display=tab==='details'?'block':'none';
+  document.getElementById('pane-edit').style.display=tab==='edit'?'block':'none';
+  document.getElementById('save-btn').style.display=tab==='edit'?'inline-flex':'none';
+  if(tab==='details')renderDetailView();
+}
+
+function renderDetailView(){
+  const ev=editId?events.find(e=>e.id===editId):null;
+  const container=document.getElementById('detail-view-content');
+  if(!ev){container.innerHTML='<div class="no-details">Save the event first.</div>';return;}
+  const hasAny=ev.desc||ev.conf||(ev.links&&ev.links.length);
+  if(!hasAny){
+    container.innerHTML=`<div class="no-details" style="padding:30px 10px;">
+      <div style="font-size:2rem;margin-bottom:8px;">📝</div>
+      <div style="font-size:14px;color:var(--ink-muted);margin-bottom:12px;">No details saved yet</div>
+      <button class="btn btn-primary" onclick="switchTab('edit')">+ Add flight details, links, notes…</button>
+    </div>`;
+    return;
+  }
+  let html=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+    <span class="cal-event ${ev.color}" style="font-size:13px;padding:4px 10px;border-radius:20px;cursor:default;">${ev.text}</span>
+    <span style="font-size:12px;color:var(--ink-muted)">${formatDate(ev.date)}</span>
+  </div>`;
+  if(ev.desc){
+    html+=`<div class="detail-section"><div class="detail-label">📝 Notes & Details</div>
+      <div class="detail-desc">${escHtml(ev.desc)}</div></div>`;
+  }
+  if(ev.conf){
+    html+=`<div class="detail-section"><div class="detail-label">🎫 Confirmation / Booking Number</div>
+      <div class="detail-conf"><span style="flex:1;letter-spacing:.05em">${escHtml(ev.conf)}</span>
+      <button class="copy-btn" onclick="copyText('${escAttr(ev.conf)}',this)">Copy</button></div></div>`;
+  }
+  if(ev.links&&ev.links.length){
+    html+=`<div class="detail-section"><div class="detail-label">🔗 Links</div><div class="detail-links">`;
+    ev.links.forEach(l=>{
+      if(!l.url)return;
+      const label=l.label||l.url;
+      const icon=l.url.includes('google')?'🗺️':l.url.includes('hotel')||l.url.includes('booking')||l.url.includes('airbnb')?'🏨':l.url.includes('alaska')||l.url.includes('southwest')||l.url.includes('united')||l.url.includes('delta')||l.url.includes('flight')?'✈️':'🔗';
+      html+=`<a class="detail-link-item" href="${escAttr(l.url)}" target="_blank" rel="noopener">
+        <span>${icon}</span><span class="detail-link-text">${escHtml(label)}</span><span style="font-size:10px;opacity:.5">↗</span></a>`;
+    });
+    html+=`</div></div>`;
+  }
+  html+=`<div style="margin-top:16px;text-align:right;"><button class="btn" onclick="switchTab('edit')">✏️ Edit details</button></div>`;
+  container.innerHTML=html;
+}
+
+function formatDate(ds){
+  const d=new Date(ds+'T12:00:00');
+  return d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escAttr(s){return String(s).replace(/"/g,'&quot;');}
+function copyText(txt,btn){
+  navigator.clipboard.writeText(txt).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+  }).finally?.(()=>{});
+  const orig=btn.textContent;btn.textContent='Copied!';setTimeout(()=>btn.textContent=orig,1500);
+}
+
+function renderLinksList(links){
+  const list=document.getElementById('links-list');list.innerHTML='';
+  (links||[]).forEach((l,i)=>list.appendChild(makeLinkRow(l,i)));
+}
+function makeLinkRow(l){
+  const row=document.createElement('div');row.className='link-row';
+  const urlIn=document.createElement('input');
+  urlIn.type='url';urlIn.className='form-input';urlIn.placeholder='https://...';urlIn.value=l.url||'';
+  const labelIn=document.createElement('input');
+  labelIn.type='text';labelIn.className='form-input link-label';labelIn.placeholder='Label (optional)';labelIn.value=l.label||'';
+  const delBtn=document.createElement('button');
+  delBtn.className='link-del-btn';delBtn.textContent='✕';delBtn.onclick=()=>row.remove();
+  row.appendChild(urlIn);row.appendChild(labelIn);row.appendChild(delBtn);
+  return row;
+}
+function addLinkRow(){document.getElementById('links-list').appendChild(makeLinkRow({url:'',label:''}));}
+
+function renderSwatches(){
+  const cp=document.getElementById('color-picker');cp.innerHTML='';
+  SWATCHES.forEach(s=>{
+    const sw=document.createElement('div');
+    sw.className='color-swatch'+(s.c===selColor?' selected':'');
+    sw.style.cssText=`background:${s.bg};border-color:${s.bd};`;
+    sw.onclick=()=>{selColor=s.c;renderSwatches();};
+    cp.appendChild(sw);
+  });
+}
+
+function getLinksFromDOM(){
+  const rows=document.getElementById('links-list').querySelectorAll('.link-row');
+  const links=[];
+  rows.forEach(row=>{
+    const inputs=row.querySelectorAll('input');
+    const url=inputs[0]?inputs[0].value.trim():'';
+    const label=inputs[1]?inputs[1].value.trim():'';
+    if(url)links.push({url,label});
+  });
+  return links;
+}
+
+async function doSave(){
+  const name=document.getElementById('ev-name').value.trim();
+  const date=document.getElementById('ev-date').value;
+  if(!name||!date){alert('Please enter a name and date.');return;}
+  const desc=document.getElementById('ev-desc').value.trim();
+  const conf=document.getElementById('ev-conf').value.trim();
+  const links=getLinksFromDOM();
+  if(editId){
+    const ev=events.find(e=>e.id===editId);
+    if(ev){ev.text=name;ev.date=date;ev.desc=desc;ev.conf=conf;ev.links=links;ev.color=selColor;}
+  }else{
+    const nv={id:uid(),date,text:name,color:selColor,desc,conf,links};
+    events.push(nv);editId=nv.id;
+  }
+  save();render();
+  document.getElementById('modal-heading').textContent=name;
+  switchTab('details');
+}
+
+async function doDelete(){
+  if(editId&&confirm('Delete this event?')){
+    events=events.filter(e=>e.id!==editId);await save();render();closeModal();
+  }
+}
+
+async function doReset(){
+  if(confirm('Reset calendar to original plan? All your added details will be lost.')){
+    events=JSON.parse(JSON.stringify(DEFAULTS));await save();render();
+  }
+}
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function chk(el){
+  el.classList.toggle('done');el.textContent=el.classList.contains('done')?'✓':'';
+  const t=el.closest('.book-item').querySelector('.book-item-title');
+  if(t){t.style.textDecoration=el.classList.contains('done')?'line-through':'none';t.style.color=el.classList.contains('done')?'var(--ink-muted)':'var(--ink)';}
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'&&e.metaKey&&document.getElementById('modal-backdrop').classList.contains('open'))doSave();
+});
+
+load();
+initTabs();
+</script>
+</body>
+</html>
