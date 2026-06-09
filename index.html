@@ -182,9 +182,6 @@ textarea.form-input{resize:vertical;min-height:90px;line-height:1.55;}
 .priority-normal{background:var(--green-light);color:#1e5a2c;}
 
 .snow-alert{background:#e8f4fb;border:1px solid #a8d4ec;border-radius:12px;padding:14px 16px;margin-bottom:1.25rem;display:flex;gap:12px;align-items:flex-start;}
-[contenteditable]{outline:none;cursor:text;border-radius:3px;transition:background .15s;}
-[contenteditable]:hover{background:rgba(232,130,12,.07);}
-[contenteditable]:focus{background:rgba(232,130,12,.12);box-shadow:0 0 0 2px rgba(232,130,12,.2);padding:1px 3px;margin:-1px -3px;}
 .section-intro{font-size:14px;color:var(--ink-light);margin-bottom:1.25rem;line-height:1.65;}
 
 @media(max-width:600px){
@@ -226,7 +223,7 @@ textarea.form-input{resize:vertical;min-height:90px;line-height:1.55;}
     <span class="cal-toolbar-hint">☁️ Syncs to Google Sheets · 📎 = has saved details · Drag to move</span>
     <button class="btn btn-primary" onclick="openModal(null,null)">+ Add event</button>
     <button class="btn" onclick="exportFile()">💾 Export file</button>
-    <span style="font-size:10px;color:var(--border-dark);cursor:pointer;padding:4px;border-radius:4px;" onclick="doReset()" title="Reset all events to default">↺</span>
+    <button class="btn" onclick="doReset()">↺ Reset</button>
   </div>
   <div id="cal-root"></div>
   <div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:1rem;">
@@ -531,7 +528,7 @@ textarea.form-input{resize:vertical;min-height:90px;line-height:1.55;}
 // ══════════════════════════════════════
 // GOOGLE SHEETS BACKEND
 // ══════════════════════════════════════
-const API_URL='https://script.google.com/macros/s/AKfycbwaIectOPykA90pu6RDTnwbzCI1uUkoTtP6rQQegAmICId_CZlidozmSdCaDSKlBNCV/exec';
+const API_URL='https://script.google.com/macros/s/AKfycbyTHJaAHOgImwWpArlINwYkfeOYWn6URM1QN8eF6GyesZ1BQTyZkqKQzR8tCnxokGAv/exec';
 
 const DEFAULTS=[
   {id:'d1', date:'2026-05-30',text:'Amma & Baba arrive! ❤️',         color:'ev-holiday',desc:'',conf:'',links:[]},
@@ -609,123 +606,69 @@ function setStatus(msg,type='info'){
 }
 
 // ── LOAD FROM GOOGLE SHEETS ──
-
-// ── LOAD — Sheet first, localStorage fallback, DEFAULTS last resort ──
 async function load(){
-  setStatus('⟳ Loading…','info');
+  setStatus('⟳ Loading from Google Sheets…','info');
   try{
     const res=await fetch(API_URL+'?action=getEvents');
     const data=await res.json();
-    if(data.events&&data.events.length>0){
-      events=data.events;
+    if(data.events && data.events.length>0){
+      events=data.events.map(ev=>({...ev,date:ev.date?ev.date.split('T')[0]:ev.date}));
       try{localStorage.setItem('tripplan_2026',JSON.stringify(events));}catch(e){}
       setStatus('✓ Synced with Google Sheets','ok');
-      render(); return;
+    } else {
+      // Sheet is empty — push defaults up
+      events=JSON.parse(JSON.stringify(DEFAULTS));
+      setStatus('⟳ First run — saving defaults to Sheet…','saving');
+      await pushToSheet();
+      setStatus('✓ Defaults saved to Google Sheets','ok');
     }
-  }catch(err){ console.log('Sheet fetch failed:',err); }
-  try{
-    const s=localStorage.getItem('tripplan_2026');
-    if(s){ events=JSON.parse(s); setStatus('✓ Loaded from cache','ok'); render(); return; }
-  }catch(e){}
-  events=JSON.parse(JSON.stringify(DEFAULTS));
-  setStatus('⟳ First run — saving to Sheet…','saving');
-  await pushToSheet();
-  setStatus('✓ Ready','ok');
+  } catch(err){
+    // Offline fallback
+    events=JSON.parse(JSON.stringify(DEFAULTS));
+    setStatus('⚠️ Offline — changes won\'t sync','error');
+  }
   render();
 }
 
+// ── SAVE TO GOOGLE SHEETS ──
 async function pushToSheet(){
   try{
-    await fetch(API_URL,{method:'POST',body:JSON.stringify({action:'saveEvents',events})});
-  }catch(err){ setStatus('⚠️ Could not sync','error'); }
+    await fetch(API_URL,{
+      method:'POST',
+      body:JSON.stringify({action:'saveEvents',events}),
+    });
+  } catch(err){
+    setStatus('⚠️ Could not sync — check connection','error');
+  }
 }
 
 async function save(){
   setStatus('⟳ Saving…','saving');
-  try{localStorage.setItem('tripplan_2026',JSON.stringify(events));}catch(e){}
   await pushToSheet();
-  setStatus('✓ Saved','ok');
+  setStatus('✓ Saved to Google Sheets','ok');
 }
 
 function uid(){return 'u'+Date.now()+Math.random().toString(36).slice(2,6);}
 
-// ── EXPORT — bakes current events into file for sharing ──
+// ══════════════════════════════════════
+// EXPORT / DOWNLOAD FILE
+// Bakes current events into the HTML and downloads it
+// ══════════════════════════════════════
 function exportFile(){
+  const html=document.documentElement.outerHTML;
+  // Replace the DEFAULTS array with current events so the file is self-contained
   const eventsJson=JSON.stringify(events,null,2);
-  const h=document.documentElement.outerHTML;
-  const updated=h.replace(/const DEFAULTS=\[[\s\S]*?\];/,'const DEFAULTS='+eventsJson+';');
+  const updated=html.replace(
+    /const DEFAULTS=\[[\s\S]*?\];/,
+    'const DEFAULTS='+eventsJson+';'
+  );
   const blob=new Blob([updated],{type:'text/html'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download='us-trip-planner-2026.html';
-  a.click();URL.revokeObjectURL(a.href);
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
-
-// ── TABS: inline editing + add + delete on ALL items ──
-function initTabs(){
-  ['day-cell-items','day-cell-title','day-cell-label','date-box-val','date-box-note',
-   'tip-line','tip-row','local-card-name','local-card-detail','local-card-dist',
-   'book-item-title','book-item-note','tips-section-header'
-  ].forEach(cls=>document.querySelectorAll('.'+cls).forEach(el=>{
-    el.contentEditable='true';el.spellcheck=false;
-    el.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();el.blur();}});
-  }));
-  document.querySelectorAll('.tip-line,.tip-row').forEach(el=>addDelBtn(el));
-  document.querySelectorAll('.local-card').forEach(el=>addDelBtn(el));
-  document.querySelectorAll('.day-cell').forEach(el=>addDelBtn(el));
-  document.querySelectorAll('.book-item').forEach(el=>addDelBtn(el));
-  document.querySelectorAll('.tips-section-body').forEach(body=>{
-    const w=aw();w.appendChild(ab('+ add tip',()=>{
-      const r=document.createElement('div');r.className='tip-row';r.contentEditable='true';r.spellcheck=false;
-      r.textContent='New tip — click to edit';
-      r.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();r.blur();}});
-      body.insertBefore(r,w);addDelBtn(r);r.focus();sel(r);
-    }));body.appendChild(w);
-  });
-  document.querySelectorAll('.local-grid').forEach(grid=>{
-    const w=aw('display:flex;align-items:center;justify-content:center;padding:4px;');
-    w.appendChild(ab('+ add place',()=>{
-      const c=document.createElement('div');c.className='local-card';
-      c.innerHTML='<span class="local-card-icon">📍</span><div class="local-card-name" contenteditable="true" spellcheck="false">New place</div><div class="local-card-dist" contenteditable="true" spellcheck="false">Distance · timing</div><div class="local-card-detail" contenteditable="true" spellcheck="false">Description…</div>';
-      grid.insertBefore(c,w);addDelBtn(c);const n=c.querySelector('.local-card-name');n.focus();sel(n);
-    }));grid.appendChild(w);
-  });
-  document.querySelectorAll('.days-grid').forEach(grid=>{
-    const w=document.createElement('div');w.className='day-cell';w.style.cssText='display:flex;align-items:center;justify-content:center;background:var(--cream);';
-    w.appendChild(ab('+ add day',()=>{
-      const c=document.createElement('div');c.className='day-cell';
-      c.innerHTML='<div class="day-cell-label" contenteditable="true" spellcheck="false">Date</div><div class="day-cell-title" contenteditable="true" spellcheck="false">Title</div><div class="day-cell-items" contenteditable="true" spellcheck="false">Details…</div>';
-      grid.insertBefore(c,w);addDelBtn(c);const l=c.querySelector('.day-cell-label');l.focus();sel(l);
-    }));grid.appendChild(w);
-  });
-  document.querySelectorAll('.book-list').forEach(list=>{
-    const w=aw('padding:8px 16px;border-top:1px solid var(--border);');
-    w.appendChild(ab('+ add item',()=>{
-      const i=document.createElement('div');i.className='book-item';
-      i.innerHTML='<div class="book-check" onclick="chk(this)"></div><div class="book-item-content"><div class="book-item-title" contenteditable="true" spellcheck="false">New booking item</div><div class="book-item-note" contenteditable="true" spellcheck="false">Details, website, price…</div></div>';
-      list.insertBefore(i,w);addDelBtn(i);const t=i.querySelector('.book-item-title');t.focus();sel(t);
-    }));list.appendChild(w);
-  });
-}
-function addDelBtn(el){
-  if(el.querySelector('.xbtn'))return;
-  const b=document.createElement('button');b.className='xbtn';b.innerHTML='✕';b.title='Remove';
-  b.style.cssText='position:absolute;top:3px;right:3px;display:none;background:#fce8e8;color:#891a1a;border:none;border-radius:4px;width:18px;height:18px;font-size:10px;cursor:pointer;z-index:10;align-items:center;justify-content:center;';
-  b.onclick=e=>{e.stopPropagation();if(confirm('Remove this item?'))el.remove();};
-  el.style.position='relative';
-  el.addEventListener('mouseenter',()=>b.style.display='flex');
-  el.addEventListener('mouseleave',()=>b.style.display='none');
-  el.appendChild(b);
-}
-function aw(s=''){const w=document.createElement('div');w.style.cssText=s;return w;}
-function ab(label,onclick){
-  const b=document.createElement('button');b.textContent=label;
-  b.style.cssText='font-size:11px;color:var(--ink-muted);background:none;border:1px dashed var(--border-dark);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:DM Sans,sans-serif;transition:all .12s;width:100%;';
-  b.onmouseover=()=>{b.style.color='var(--saffron)';b.style.borderColor='var(--saffron)';b.style.background='var(--saffron-pale)';};
-  b.onmouseout=()=>{b.style.color='var(--ink-muted)';b.style.borderColor='var(--border-dark)';b.style.background='none';};
-  b.onclick=onclick;return b;
-}
-function sel(el){if(!el)return;const r=document.createRange();r.selectNodeContents(el);const s=window.getSelection();s.removeAllRanges();s.addRange(r);}
 
 // ══════════════════════════════════════
 // CALENDAR RENDER — Mon-start
@@ -979,8 +922,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.metaKey&&document.getElementById('modal-backdrop').classList.contains('open'))doSave();
 });
 
-load();
-initTabs();
+load(); // async — renders after sheet data arrives
 </script>
 </body>
 </html>
