@@ -47,13 +47,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .btn-danger{background:#fce8e8;color:#891a1a;border-color:#f0a0a0;}
 .btn-danger:hover{background:#f7c1c1;}
 
-.cal-month-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;}
+.cal-month-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1.25rem;width:100%;}
 .cal-month-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--cream);}
 .cal-month-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;flex:1;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);width:100%;table-layout:fixed;}
+.cal-day-overflow{font-size:9px;color:var(--ink-muted);padding:1px 3px;text-align:right;cursor:pointer;}
+.cal-day-overflow:hover{color:var(--saffron);}
 .cal-dow{text-align:center;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-muted);padding:8px 4px 4px;background:var(--cream);border-right:1px solid var(--border);}
 .cal-dow:last-child{border-right:none;}
-.cal-day{border-top:1px solid var(--border);border-right:1px solid var(--border);min-height:76px;padding:4px 5px;transition:background .1s;}
+.cal-day{border-top:1px solid var(--border);border-right:1px solid var(--border);height:90px;padding:4px 5px;transition:background .1s;overflow:hidden;}
 .cal-day:nth-child(7n){border-right:none;}
 .cal-day.empty{background:var(--cream);pointer-events:none;}
 .cal-day.weekend{background:#fdfcf9;}
@@ -61,7 +63,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .cal-num{font-size:12px;color:var(--ink-muted);display:block;margin-bottom:3px;}
 .cal-num.sat,.cal-num.sun{color:var(--saffron);font-weight:500;}
 
-.cal-event{font-size:10.5px;padding:2px 5px;border-radius:4px;margin-top:2px;line-height:1.3;display:flex;align-items:center;gap:3px;cursor:pointer;user-select:none;font-weight:500;transition:opacity .1s;}
+.cal-event{font-size:10.5px;padding:2px 5px;border-radius:4px;margin-top:2px;line-height:1.3;display:flex;align-items:center;gap:3px;cursor:pointer;user-select:none;font-weight:500;transition:opacity .1s;max-width:100%;overflow:hidden;}
 .cal-event.has-details::after{content:'📎';font-size:8px;margin-left:1px;opacity:.7;}
 .cal-event.dragging{opacity:.35;}
 .cal-event-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -77,7 +79,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .ev-gray{background:#f0ede8;color:#4a4540;}
 .ev-holiday{background:#1a1612;color:#fff;}
 
-.add-event-btn{width:100%;font-size:10px;color:var(--ink-muted);background:none;border:1px dashed var(--border-dark);border-radius:4px;padding:2px 4px;cursor:pointer;text-align:left;transition:all .12s;margin-top:3px;font-family:'DM Sans',sans-serif;}
+.add-event-btn{width:100%;font-size:10px;color:var(--ink-muted);background:none;border:1px dashed var(--border-dark);border-radius:4px;padding:2px 4px;cursor:pointer;text-align:left;transition:all .12s;margin-top:3px;font-family:'DM Sans',sans-serif;display:block;overflow:hidden;}
 .add-event-btn:hover{background:var(--saffron-pale);color:var(--saffron);border-color:var(--saffron);}
 
 /* MODAL */
@@ -713,7 +715,17 @@ function render(){
       num.className='cal-num'+(dow===5?' sat':dow===6?' sun':'');
       num.textContent=d;
       cell.appendChild(num);
-      events.filter(e=>e.date===ds).forEach(ev=>cell.appendChild(makeEvEl(ev)));
+      const dayEvs=events.filter(e=>e.date===ds);
+      const maxShow=2; // show max 2 events per cell, rest hidden
+      dayEvs.slice(0,maxShow).forEach(ev=>cell.appendChild(makeEvEl(ev)));
+      if(dayEvs.length>maxShow){
+        const more=document.createElement('div');
+        more.className='cal-day-overflow';
+        more.textContent='+' + (dayEvs.length-maxShow) + ' more';
+        more.title='Click to see all events for this day';
+        more.onclick=e=>{e.stopPropagation();openModal(dayEvs[maxShow].id,ds);};
+        cell.appendChild(more);
+      }
       const ab=document.createElement('button');
       ab.className='add-event-btn';ab.textContent='+ add';
       ab.onclick=e=>{e.stopPropagation();openModal(null,ds);};
